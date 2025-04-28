@@ -204,7 +204,7 @@ trtexec.exe --onnx=models/armor.onnx --saveEngine=models/car.engine --fp16
 1. 优化神经网络，改用最新的YOLO模型或其他更强大的网络。
 2. 融合deepsort目标跟踪算法，提升算法的轨迹预测、跟踪的能力。
 3. 适配更多型号的相机，提升代码的普适性。
-
+4. 针对不同距离应该有一个梯度函数来保证得出的坐标为车的正中心。
 
 #### 注意事项
 1. 不仅可以tensorrt加速，理论上openvino也可以
