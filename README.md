@@ -62,7 +62,8 @@ python export.py --weights models/car.pt --include onnx --opset 12 --simplify
 将 .onnx 转成 .engine
 Linux：
 trtexec --onnx=models/car.onnx --saveEngine=models/car.engine --fp16
-trtexec --onnx=models/armor.onnx --saveEngine=models/car.engine --fp16
+trtexec --onnx=models/armor.onnx --saveEngine=models/armor.engine --fp16
+linux 转换有点区别，可能不能直接命令行转
 
 Windows：
 trtexec.exe --onnx=models/car.onnx --saveEngine=models/car.engine --fp16
