@@ -62,7 +62,8 @@ python export.py --weights models/car.pt --include onnx --opset 12 --simplify
 将 .onnx 转成 .engine
 Linux：
 trtexec --onnx=models/car.onnx --saveEngine=models/car.engine --fp16
-trtexec --onnx=models/armor.onnx --saveEngine=models/car.engine --fp16
+trtexec --onnx=models/armor.onnx --saveEngine=models/armor.engine --fp16
+linux 转换有点区别，可能不能直接命令行转
 
 Windows：
 trtexec.exe --onnx=models/car.onnx --saveEngine=models/car.engine --fp16
@@ -205,7 +206,6 @@ trtexec.exe --onnx=models/armor.onnx --saveEngine=models/car.engine --fp16
 2. 融合deepsort目标跟踪算法，提升算法的轨迹预测、跟踪的能力。
 3. 适配更多型号的相机，提升代码的普适性。
 4. 针对不同距离应该有一个梯度函数来保证得出的坐标为车的正中心。
-
 
 #### 注意事项
 1. 不仅可以tensorrt加速，理论上openvino也可以
