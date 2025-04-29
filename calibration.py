@@ -1,5 +1,6 @@
 import threading
 import time
+import sys
 
 import cv2
 import numpy as np
@@ -10,7 +11,12 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QVBoxLay
 from hik_camera import call_back_get_image, start_grab_and_get_data_size, close_and_destroy_device, set_Value, \
     get_Value, image_control
 
-from MvImport.MvCameraControl_class import *
+if sys.platform.startswith("win"):    
+    sys.path.append("./MvImport")
+    from MvImport.MvCameraControl_class import *
+else:
+    sys.path.append("./MvImport_Linux")
+    from MvImport_Linux.MvCameraControl_class import *
 import yaml
 with open("config.yaml", "r", encoding="utf-8") as f:  # 指定 UTF-8 编码
     config = yaml.safe_load(f)
@@ -250,9 +256,10 @@ class MyUI(QWidget):
         self.show()
 
     def keyPressEvent(self, event):
-        # 按下键盘事件
         if event.key() == Qt.Key_Escape:
             self.close()
+        elif event.key() == Qt.Key_Space and sys.platform.startswith("linux"):
+            os.system("xdotool key Escape")
 
     def update_images(self):
 
