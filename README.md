@@ -66,6 +66,9 @@ python export.py --weights models/car.pt --include onnx --opset 12 --simplify
 将 .onnx 转成 .engine
 Linux：
 使用onnx2engine.py
+或者使用
+python export.py --weights models/car.pt --include engine --device 0 --half
+python export.py --weights models/armor.pt --include engine --device 0 --half
 
 Windows：
 trtexec.exe --onnx=models/car.onnx --saveEngine=models/car.engine --fp16
