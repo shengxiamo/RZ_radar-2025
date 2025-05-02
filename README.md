@@ -1,5 +1,9 @@
 # 厦门理工学院PFA战队单目相机雷达站算法开源（含机器人、装甲板识别模型）
- **【已更新最新的串口通信协议，国赛即插即用！！！】** 
+ **串口协议有点问题，正在抓紧修改ing** 
+ 
+ **串口协议有点问题，正在抓紧修改ing** 
+ 
+ **串口协议有点问题，正在抓紧修改ing** 
 
 **【2025优化】**
 
@@ -61,13 +65,11 @@ python export.py --weights models/car.pt --include onnx --opset 12 --simplify
 
 将 .onnx 转成 .engine
 Linux：
-trtexec --onnx=models/car.onnx --saveEngine=models/car.engine --fp16
-trtexec --onnx=models/armor.onnx --saveEngine=models/armor.engine --fp16
-linux 转换有点区别，可能不能直接命令行转
+使用onnx2engine.py
 
 Windows：
 trtexec.exe --onnx=models/car.onnx --saveEngine=models/car.engine --fp16
-trtexec.exe --onnx=models/armor.onnx --saveEngine=models/car.engine --fp16
+trtexec.exe --onnx=models/armor.onnx --saveEngine=models/armor.engine --fp16
 
 ```
 4. 修改config,改models下的.pt模型为.engine,有串口记得确保config下的use_serial为True
