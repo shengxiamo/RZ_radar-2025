@@ -6,7 +6,7 @@ global:
   map_size: [2800, 1500]  # 战场地图尺寸
 
 serial: # 串口
-  port: 'COM3'
+  port: 'COM9'
   baudrate: 115200
   timeout: 1
 

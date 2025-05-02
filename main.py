@@ -58,7 +58,7 @@ map_backup = cv2.imread(config['paths']['map_images']['backup'])
 
 # 导入战场每个高度的不同仿射变化矩阵
 M_ground = loaded_arrays[0]  # 地面层、公路层
-M_height_r = loaded_arrays[1]  # R型高地
+M_height_r = loaded_arrays[1]  # 中央高地
 
 # 确定地图画面像素，保证不会溢出
 height, width = mask_image.shape[:2]
