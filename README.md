@@ -65,13 +65,11 @@ python export.py --weights models/car.pt --include onnx --opset 12 --simplify
 
 将 .onnx 转成 .engine
 Linux：
-trtexec --onnx=models/car.onnx --saveEngine=models/car.engine --fp16
-trtexec --onnx=models/armor.onnx --saveEngine=models/armor.engine --fp16
-linux 转换有点区别，可能不能直接命令行转
+使用onnx2engine.py
 
 Windows：
 trtexec.exe --onnx=models/car.onnx --saveEngine=models/car.engine --fp16
-trtexec.exe --onnx=models/armor.onnx --saveEngine=models/car.engine --fp16
+trtexec.exe --onnx=models/armor.onnx --saveEngine=models/armor.engine --fp16
 
 ```
 4. 修改config,改models下的.pt模型为.engine,有串口记得确保config下的use_serial为True
