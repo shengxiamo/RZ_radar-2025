@@ -1,9 +1,10 @@
 # 厦门理工学院PFA战队单目相机雷达站算法开源（含机器人、装甲板识别模型）
- **串口协议有点问题，正在抓紧修改ing** 
- 
- **串口协议有点问题，正在抓紧修改ing** 
- 
- **串口协议有点问题，正在抓紧修改ing** 
+ **没有定位模块，可以直接用哨兵（默认出生点），如下**
+
+
+
+![img.png](images/img.png)
+
 
 **【2025优化】**
 
@@ -113,6 +114,7 @@ trtexec.exe --onnx=models/armor.onnx --saveEngine=models/armor.engine --fp16
     |   LICENSE # 开源许可
     |   main.py # 主程序运行代码
     |   make_mask.py # 掩码绘制代码
+    |   onnx2engine.py 
     |   README.en.md
     |   README.md
     |   requirements.txt # 环境依赖文件
@@ -124,6 +126,7 @@ trtexec.exe --onnx=models/armor.onnx --saveEngine=models/armor.engine --fp16
     |       image2.png
     |       image3.JPG
     |       image4.jpg
+    |       img.png
     |       map.jpg # 地图图片
     |       map_blue.jpg # 蓝方视角地图
     |       map_mask.jpg # 地图掩码（用于透视变换高度选择）

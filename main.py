@@ -65,14 +65,14 @@ map_backup = cv2.imread(config['paths']['map_images']['backup'])
 
 # 导入战场每个高度的不同仿射变化矩阵
 M_ground = loaded_arrays[0]  # 地面层、公路层
-M_height_r = loaded_arrays[1]  # R型高地
+M_height_r = loaded_arrays[1]  # 中央高地
 
 # 确定地图画面像素，保证不会溢出
 height, width = mask_image.shape[:2]
 height -= 1
 width -= 1
 
-# 初始化战场信息UI（标记进度、双倍易伤次数、双倍易伤触发状态）
+# 初始化战场信息UI（易伤情况、双倍易伤次数、双倍易伤触发状态）
 information_ui = np.zeros((config['ui']['info_panel_size'][1],
                           config['ui']['info_panel_size'][0], 3), dtype=np.uint8) * 255
 information_ui_show = information_ui.copy()
@@ -80,7 +80,7 @@ double_vulnerability_chance = -1  # 双倍易伤机会数
 opponent_double_vulnerability = -1  # 是否正在触发双倍易伤
 target = -1  # 飞镖当前瞄准目标（用于触发双倍易伤）
 chances_flag = 1  # 双倍易伤触发标志位，需要从1递增，每小局比赛会重置，所以每局比赛要重启程序
-progress_list = [-1, -1, -1, -1, -1, -1]  # 标记进度列表
+vulnerability = [-1, -1, -1, -1, -1, -1]  # 易伤情况
 
 # 加载战场地图
 map = map_backup.copy()
@@ -139,7 +139,7 @@ mapping_table = {
     "B7": 107
 }
 
-# 盲区预测点位，如果没有定位模块，连接数服务器的非哨兵机器人坐标为（0,0）
+# 盲区预测点位
 guess_table = {}
 for robot, points in config['blind_zone']['points'].items():
     guess_table[robot] = [tuple(point) for point in points]
@@ -707,7 +707,7 @@ def ser_receive():
     if not ser1:  # 检查串口是否可用
         print("串口未启用，接收线程退出")
         return
-    global progress_list  # 标记进度列表
+    global vulnerability  # 标记进度列表
     global double_vulnerability_chance  # 拥有双倍易伤次数
     global opponent_double_vulnerability  # 双倍易伤触发状态
     global target  # 飞镖当前目标
@@ -749,15 +749,16 @@ def ser_receive():
                 # 更新裁判系统数据，标记进度、易伤、飞镖目标
                 if progress_result is not None:
                     received_cmd_id1, received_data1, received_seq1 = progress_result
-                    progress_list = list(received_data1)
+                    # vulnerability = received_data1[0]
+                    vulnerability = [((received_data1[0] >> i) & 0x01) * 120 for i in range(5)]
                     if state == 'R':
-                        guess_value_now['B1'] = progress_list[0]
-                        guess_value_now['B2'] = progress_list[1]
-                        guess_value_now['B7'] = progress_list[5]
+                        guess_value_now['B1'] = vulnerability[0]
+                        guess_value_now['B2'] = vulnerability[1]
+                        guess_value_now['B7'] = vulnerability[4]
                     else:
-                        guess_value_now['R1'] = progress_list[0]
-                        guess_value_now['R2'] = progress_list[1]
-                        guess_value_now['R7'] = progress_list[5]
+                        guess_value_now['R1'] = vulnerability[0]
+                        guess_value_now['R2'] = vulnerability[1]
+                        guess_value_now['R7'] = vulnerability[4]
                 if vulnerability_result is not None:
                     received_cmd_id2, received_data2, received_seq2 = vulnerability_result
                     received_data2 = list(received_data2)[0]
@@ -931,7 +932,7 @@ while True:
     t_p = te - ts
     print("fps:", 1 / t_p)  # 打印帧率
     # 绘制UI
-    _ = draw_information_ui(progress_list, state, information_ui_show)
+    _ = draw_information_ui(vulnerability, state, information_ui_show)
     cv2.putText(information_ui_show, "vulnerability_chances: " + str(double_vulnerability_chance),
                 (10, 350),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
