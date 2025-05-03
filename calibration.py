@@ -7,10 +7,11 @@ from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPixmap, QImage, QTextCursor
 from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QTextEdit, QGridLayout
 
-import sys
+
 from hik_camera import call_back_get_image, start_grab_and_get_data_size, close_and_destroy_device, set_Value, \
     get_Value, image_control
 
+import sys
 if sys.platform.startswith("win"):    
     sys.path.append("./MvImport")
     from MvImport.MvCameraControl_class import *
