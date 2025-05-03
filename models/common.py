@@ -401,22 +401,50 @@ class DetectMultiBackend(nn.Module):
             output_names = []
             fp16 = False  # default updated below
             dynamic = False
-            for i in range(model.num_bindings):
-                name = model.get_binding_name(i)
-                dtype = trt.nptype(model.get_binding_dtype(i))
-                if model.binding_is_input(i):
-                    if -1 in tuple(model.get_binding_shape(i)):  # dynamic
-                        dynamic = True
-                        context.set_binding_shape(i, tuple(model.get_profile_shape(0, i)[2]))
-                    if dtype == np.float16:
-                        fp16 = True
-                else:  # output
-                    output_names.append(name)
-                shape = tuple(context.get_binding_shape(i))
-                im = torch.from_numpy(np.empty(shape, dtype=dtype)).to(device)
-                bindings[name] = Binding(name, dtype, shape, im, int(im.data_ptr()))
+            
+            # 兼容新旧版本TensorRT API
+            try:
+                # 尝试旧版本API
+                num_bindings = model.num_bindings
+                for i in range(num_bindings):
+                    name = model.get_binding_name(i)
+                    dtype = trt.nptype(model.get_binding_dtype(i))
+                    if model.binding_is_input(i):
+                        if -1 in tuple(model.get_binding_shape(i)):  # dynamic
+                            dynamic = True
+                            context.set_binding_shape(i, tuple(model.get_profile_shape(0, i)[2]))
+                        if dtype == np.float16:
+                            fp16 = True
+                    else:  # output
+                        output_names.append(name)
+                    shape = tuple(context.get_binding_shape(i))
+                    im = torch.from_numpy(np.empty(shape, dtype=dtype)).to(device)
+                    bindings[name] = Binding(name, dtype, shape, im, int(im.data_ptr()))
+            except AttributeError:
+                # 使用新版本API (TensorRT 8+)
+                LOGGER.info("Using TensorRT 8+ API")
+                num_io_tensors = model.num_io_tensors
+                for i in range(num_io_tensors):
+                    name = model.get_tensor_name(i)
+                    dtype = trt.nptype(model.get_tensor_dtype(name))
+                    shape = model.get_tensor_shape(name)
+                    if model.get_tensor_mode(name) == trt.TensorIOMode.INPUT:
+                        if any(dim == -1 for dim in shape):  # dynamic
+                            dynamic = True
+                            profile_shape = model.get_profile_shape(0, name)
+                            context.set_input_shape(name, profile_shape[2])
+                        if dtype == np.float16:
+                            fp16 = True
+                    else:  # output
+                        output_names.append(name)
+                    shape = tuple(context.get_tensor_shape(name) if hasattr(context, 'get_tensor_shape') else 
+                                context.get_binding_shape(model.get_tensor_binding_index(name)))
+                    im = torch.from_numpy(np.empty(shape, dtype=dtype)).to(device)
+                    bindings[name] = Binding(name, dtype, shape, im, int(im.data_ptr()))
+            
             binding_addrs = OrderedDict((n, d.ptr) for n, d in bindings.items())
-            batch_size = bindings['images'].shape[0]  # if dynamic, this is instead max batch size
+            batch_size = next((d.shape[0] for d in bindings.values() if d.shape[0] > 0), 1)  # 获取批处理大小
+  
         elif coreml:  # CoreML
             LOGGER.info(f'Loading {w} for CoreML inference...')
             import coremltools as ct
