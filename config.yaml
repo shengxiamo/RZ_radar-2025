@@ -1,12 +1,12 @@
 global:
   state: 'B'  # 队伍颜色 R/B
-  camera_mode: 'test'  # 'test':测试模式,'hik':海康相机,'video':USB相机（videocapture）
+  camera_mode: 'hik'  # 'test':测试模式,'hik':海康相机,'video':USB相机（videocapture）
   use_serial: True  # 串口启用开关  保证了无串口时能正常调试，虽然没什么影响（有try）
   save_img: False  # 是否保存图像
   map_size: [2800, 1500]  # 战场地图尺寸
 
 serial: # 串口
-  port: 'COM9'
+  port: '/dev/ttyUSB0' 
   baudrate: 115200
   timeout: 1
 
@@ -29,8 +29,8 @@ paths:
     mask: 'images-2025/map_mask.jpg' # 加载落点判断掩码
     backup: 'images-2025/map.jpg'
   models:
-    car: 'models/car.pt'
-    armor: 'models/armor.pt'
+    car: 'models/car.engine'
+    armor: 'models/armor.engine'
 
 camera_params:
   exposure_time: 16000.0 # 曝光时间
