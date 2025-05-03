@@ -1,11 +1,11 @@
-from sys import platform
+import platform
 
 from export import export_onnx
 from utils.general import (LOGGER, check_requirements, check_version,
                            colorstr)
 
 
-def export_engine( file, half, workspace=4, verbose=False, prefix=colorstr('TensorRT:')):
+def export_engine(file, half, workspace=4, verbose=False, prefix=colorstr('TensorRT:')):
     # YOLOv5 TensorRT export https://developer.nvidia.com/tensorrt
     try:
         import tensorrt as trt
@@ -19,7 +19,6 @@ def export_engine( file, half, workspace=4, verbose=False, prefix=colorstr('Tens
     onnx = file + '.onnx'
 
     LOGGER.info(f'\n{prefix} starting export with TensorRT {trt.__version__}...')
-    # assert onnx.exists(), f'failed to export ONNX file: {onnx}'
     f = file + '.engine'  # TensorRT engine file
     logger = trt.Logger(trt.Logger.INFO)
     if verbose:
@@ -27,7 +26,6 @@ def export_engine( file, half, workspace=4, verbose=False, prefix=colorstr('Tens
 
     builder = trt.Builder(logger)
     config = builder.create_builder_config()
-    # config.max_workspace_size = workspace * 1 << 30
     config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, workspace << 30)  # fix TRT 8.4 deprecation notice
 
     flag = (1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH))
@@ -43,14 +41,17 @@ def export_engine( file, half, workspace=4, verbose=False, prefix=colorstr('Tens
     for out in outputs:
         LOGGER.info(f'{prefix} output "{out.name}" with shape{out.shape} {out.dtype}')
 
-
     LOGGER.info(f'{prefix} building FP{16 if builder.platform_has_fast_fp16 and half else 32} engine as {f}')
     if builder.platform_has_fast_fp16 and half:
         config.set_flag(trt.BuilderFlag.FP16)
-    with builder.build_engine(network, config) as engine, open(f, 'wb') as t:
-        t.write(engine.serialize())
-    return f, None
 
+    # Use build_serialized_network for TensorRT >= 8.0
+    serialized_engine = builder.build_serialized_network(network, config)
+    if serialized_engine is None:
+        raise RuntimeError("Failed to build serialized TensorRT engine")
+    with open(f, 'wb') as t:
+        t.write(serialized_engine)
+    return f, None
 
 export_engine('models/armor', half=True)
 export_engine('models/car', half=True)
