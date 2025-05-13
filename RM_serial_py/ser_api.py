@@ -160,6 +160,26 @@ def build_data_decision(chances,state):
     data.extend(bytearray(struct.pack('B', chances)))
     return data
 
+def build_data_gimbaler_client(chances, state, opponent_state):
+    data = bytearray()
+    if state == 'R':
+        data.extend(bytearray(struct.pack('H', 9)))
+        data.extend(bytearray(struct.pack('H', 0x0106)))
+    else:
+        data.extend(bytearray(struct.pack('H', 109)))
+        data.extend(bytearray(struct.pack('H', 0x016A)))
+    
+    if (chances > 0 and opponent_state == 1):
+        send_str = "双倍易伤次数：" + str(chances) + " 敌方易伤请稍等"
+    elif (chances > 0 and opponent_state == 0):
+        send_str = "双倍易伤次数：" + str(chances) + " 可发起"
+    else:
+        send_str = "无双倍易伤次数"
+    user_data_bytes = send_str.encode('utf-16-le')
+    padded_user_data_bytes = user_data_bytes.ljust(30, b'\0')
+    data.extend(padded_user_data_bytes)
+    return data
+
 
 
 # 完整数据包构建
