@@ -79,6 +79,7 @@ information_ui_show = information_ui.copy()
 double_vulnerability_chance = -1  # 双倍易伤机会数
 opponent_double_vulnerability = -1  # 是否正在触发双倍易伤
 target = -1  # 飞镖当前瞄准目标（用于触发双倍易伤）
+stage_remain_time = -1
 chances_flag = 1  # 双倍易伤触发标志位，需要从1递增，每小局比赛会重置，所以每局比赛要重启程序
 vulnerability = [-1, -1, -1, -1, -1, -1]  # 易伤情况
 
@@ -678,19 +679,17 @@ def ser_send():
                     guess_value['R2'] = guess_value_now.get('R2')
                     guess_value['R7'] = guess_value_now.get('R7')
 
-            # 条件：数据变化 或 达到发送间隔
-            # data_changed = (double_vulnerability_chance != last_sent_vulnerability_chance or
-            #                 opponent_double_vulnerability != last_sent_opponent_trigger_state)
-            # time_to_send_again = (current_time_for_decision_send - time_since_last_radar_decision_send > radar_decision_send_interval)
 
             send_gimbaler_data = build_data_gimbaler_client(double_vulnerability_chance, state, opponent_double_vulnerability)
             send_gimbaler_packet, seq = build_send_packet(send_gimbaler_data, seq, [0x03, 0x08])
             ser1.write(send_gimbaler_packet)
             print("发送飞手")
+            print(target)
 
             # 判断飞镖的目标是否切换，切换则尝试发动双倍易伤
             if target != target_last and target != 0:
                 target_last = target
+                print("飞镖目标切换，尝试发动双倍易伤")
                 # 有双倍易伤机会，并且当前没有在双倍易伤
                 if double_vulnerability_chance > 0 and opponent_double_vulnerability == 0:
                     time_e = time.time()
@@ -714,23 +713,26 @@ def ser_send():
 
 
 
-            # 有双倍易伤直接开大！！！
-            # if double_vulnerability_chance > 0 and opponent_double_vulnerability == 0:
-            #     time_e = time.time()
-            #     # 发送时间间隔为10秒
-            #     if time_e - time_s > 10:
-            #         print("请求双倍触发")
-            #         data = build_data_decision(chances_flag, state)
-            #         packet, seq = build_send_packet(data, seq, [0x03, 0x01])
-            #         # print(packet.hex(),chances_flag,state)
-            #         ser1.write(packet)
-            #         print("请求成功", chances_flag)
-            #         # 更新标志位
-            #         chances_flag += 1
-            #         if chances_flag >= 3:
-            #             chances_flag = 1
+            # 两分钟还有两次，或者最后一分钟，直接开大
+            if (0 < stage_remain_time < 120 and double_vulnerability_chance == 2) or (0 < stage_remain_time < 60 and double_vulnerability_chance > 0):
+                print("请求双倍触发")
+                if double_vulnerability_chance > 0 and opponent_double_vulnerability == 0:
+                    time_e = time.time()
+                    # 发送时间间隔为10秒
+                    if time_e - time_s > 10:
+                        print("请求双倍触发")
+                        data = build_data_decision(chances_flag, state)
+                        packet, seq = build_send_packet(data, seq, [0x03, 0x01])
+                        # print(packet.hex(),chances_flag,state)
+                        ser1.write(packet)
+                        print("请求成功", chances_flag)
+                        # 更新标志位
+                        chances_flag += 1
+                        if chances_flag >= 3:
+                            chances_flag = 1
 
-            #         time_s = time.time()
+                        time_s = time.time()
+            
             
 
         except Exception as r:
@@ -746,9 +748,11 @@ def ser_receive():
     global double_vulnerability_chance  # 拥有双倍易伤次数
     global opponent_double_vulnerability  # 双倍易伤触发状态
     global target  # 飞镖当前目标
+    global stage_remain_time # 游戏剩余时间
     progress_cmd_id = [0x02, 0x0C]  # 任意想要接收数据的命令码，这里是雷达标记进度的命令码0x020E
     vulnerability_cmd_id = [0x02, 0x0E]  # 双倍易伤次数和触发状态
     target_cmd_id = [0x01, 0x05]  # 飞镖目标
+    game_state_cmd_id = [0x00, 0x01]
     buffer = b''  # 初始化缓冲区
     while True:
         # 从串口读取数据
@@ -777,10 +781,16 @@ def ser_receive():
                     break
 
                 # 解析数据包
-                progress_result = receive_packet(packet_data, progress_cmd_id,
-                                                 info=False)  # 解析单个数据包，cmd_id为0x020E,不输出日志
+                progress_result = receive_packet(packet_data, progress_cmd_id,info=False)  # 解析单个数据包，cmd_id为0x020E,不输出日志
+                # 解析决策信息
                 vulnerability_result = receive_packet(packet_data, vulnerability_cmd_id, info=False)
+                # 解析飞镖目标
                 target_result = receive_packet(packet_data, target_cmd_id, info=False)
+                # 解析比赛状态
+                game_status_result = receive_packet(packet_data, game_state_cmd_id, info=False) # 修改变量名
+
+
+
                 # 更新裁判系统数据，标记进度、易伤、飞镖目标
                 if progress_result is not None:
                     received_cmd_id1, received_data1, received_seq1 = progress_result
@@ -801,6 +811,16 @@ def ser_receive():
                 if target_result is not None:
                     received_cmd_id3, received_data3, received_seq3 = target_result
                     target = (list(received_data3)[1] & 0b1100000) >> 5
+                if game_status_result is not None:
+                    received_cmd_id4, received_data4, received_seq4 = game_status_result
+                    # received_data4 包含了 game_status_t 的数据
+                    # game_type_progress = received_data4[0] # 字节0: game_type 和 game_progress
+                    # stage_remain_time_bytes = received_data4[1:3] # 字节1和2: stage_remain_time
+                    # sync_timestamp_bytes = received_data4[3:11] # 字节3到10: SyncTimeStamp
+                    stage_remain_time_bytes = received_data4[1:3]
+                    stage_remain_time = int.from_bytes(stage_remain_time_bytes, byteorder='little', signed=False)
+                    print(f"比赛剩余时间: {stage_remain_time} 秒")
+
 
                 # 从缓冲区中移除已解析的数据包
                 buffer = buffer[sof_index + len(packet_data):]
